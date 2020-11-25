@@ -3,24 +3,43 @@ from struct import pack
 
 
 
-def push_reg(address,pop_reg, pop_reg2, a_gadget):
+def pop_reg(address,reg, reg2, a_gadget,mode):
     """Creates a packed struct which pops the address into the struct, using the 
     arithmetic gadget if required
     
     :param address: The address that may contain a null byte
-    :param pop_reg: Address of a gadget that pops the stack into a register
-    :param pop_reg2: Address of a gadget that pops the stack into a second register
-    :param a_gadget: Address of an arithmetic gadget that stores the result of 
+    :param reg: Gadget that pops the stack into a register
+    :param reg2: Gadget that pops the stack into a second register
+    :param a_gadget: Arithmetic gadget that stores the result of 
         some arithmetic operation of reg and reg2 (currently only supporting add)
         which stores the result in reg
-    :return: A packed struct that pushes address into pop_reg
+    :param mode: The type of agadget, member of [add,sub,xor,inc,dec]
+    :return: A packed struct that pops address into reg
     """
     if null_free(address):
-            return pack("<I",address) + pack("<I",pop_reg)
+            return  reg + pack("<I",address)
     else:
-        mask, masked_address = get_mask_add(address)
-        return pack("<I",mask) + pack("<I", masked_address)\
-            + pack("<I", pop_reg) + pack("<I", pop_reg2) + pack("<I",a_gadget)
+        print(f"Modified {address:x} using {mode}")
+        if mode in ["add","sub","xor"]:
+            mask, masked_address = 0, 0
+            if mode == "add":
+                mask, masked_address = get_mask_add(address)
+            elif mode == "sub":
+                mask, masked_address = get_mask_sub(address)
+            elif mode == "xor":
+                mask, masked_address = get_mask_xor(address)
+            return reg + pack("<I",masked_address) + reg2 +  pack("<I", mask) + a_gadget
+        elif mode in ["inc","dec"]:
+            a_chain = b""
+            if mode == "inc":
+                while not null_free(address):
+                    address -= 1
+                    a_chain += a_gadget
+            elif mode == "dec":
+                while not null_free(address):
+                    address += 1
+                    a_chain += a_gadget
+            return reg + pack("<I", address) + a_chain
 
 
 def null_free(address):
@@ -64,6 +83,12 @@ def test():
         print(f"{out[1]:8x} - {out[0]:8x} = {(out[1]-out[0])%(1<<32):8x}")
         out = get_mask_xor(inp)
         print(f"{out[1]:8x} ^ {out[0]:8x} = {(out[1]^out[0]):8x}")
+        a1 = inp
+        count = 0
+        while not null_free(a1):
+            a1 -= 1 
+            count += 1
+        print(f"inc * {count} ( {a1} )")
 
 
 
