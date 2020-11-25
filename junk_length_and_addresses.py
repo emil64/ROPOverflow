@@ -17,42 +17,47 @@ def get_addreses(gdb_response):
 
 
 def get_everything(exe):
-    slack = -15
+    slack = -254
     signal = response = data_address = bss_address = None
     b = []
+    test_file = "test_file.bin"
 
     while signal != 'SIGSEGV':
 
-        slack += 15
-        for x in range(1, 15):
+        slack += 254
+        for x in range(1, 255):
             b.extend([x, x, x, x])
 
-        f = open("file.bin", "wb")
+        f = open(test_file, "wb")
         f.write(bytes(b))
         f.close()
 
         gdbmi = GdbController()
         gdbmi.write('file ' + exe)
         gdbmi.write('-break-insert main')
-        gdbmi.write('-exec-arguments file.bin')
+        gdbmi.write('-exec-arguments ' + test_file)
         gdbmi.write('-exec-run')
         response = gdbmi.write('maint info section')
         if data_address is None:
             (data_address, bss_address) = get_addreses(response)
         response = gdbmi.write('-exec-continue')
-        # pprint(response)
+
         if response[-1]['payload']['reason'] == 'signal-received':
-            signal = response[-1]['payload']['signal-name']
+            address = response[-1]['payload']['frame']['addr']
+            if address[2:4] == address[4:6] or address[6:8] == address[8:]:
+                signal = response[-1]['payload']['signal-name']
+                # pprint(response)
 
     address = response[-1]['payload']['frame']['addr']
     length = ((int(address[8:], 16) - 1) + slack) * 4
 
     if int(address[8:], 16) != int(address[2:4], 16):
+        length += 4
         i = 10
         while int(address[i - 2:i], 16) != int(address[2:4], 16):
             length -= 1
             i -= 2
-    os.remove("file.bin")
+    os.remove(test_file)
     return length, data_address, bss_address
 
 
