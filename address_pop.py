@@ -1,4 +1,6 @@
 # Remove null bytes from address
+from ctypes import addressof
+from logging import log
 from struct import pack
 
 
@@ -39,7 +41,8 @@ def pop_reg(address,reg, reg2, a_gadget,mode):
                 while not null_free(address):
                     address += 1
                     a_chain += a_gadget
-            return reg + pack("<I", address) + a_chain
+            print(address)
+            return reg + pack('<I', address) + a_chain
 
 
 def null_free(address):
@@ -70,6 +73,22 @@ def get_mask_xor(address):
     return mask, (address^mask)
 
 
+def doubadd(address,double,add):
+    out = b""
+    for i in range(31,0,-1):
+        if (address >> i) & 0x1 == 1:
+           out += add + double 
+        else:
+           out += double
+    if (address & 0x1):
+        out += add
+    return out
+
+
+
+
+
+
 
 def test():
     assert(null_free(0x12345678))
@@ -83,12 +102,7 @@ def test():
         print(f"{out[1]:8x} - {out[0]:8x} = {(out[1]-out[0])%(1<<32):8x}")
         out = get_mask_xor(inp)
         print(f"{out[1]:8x} ^ {out[0]:8x} = {(out[1]^out[0]):8x}")
-        a1 = inp
-        count = 0
-        while not null_free(a1):
-            a1 -= 1 
-            count += 1
-        print(f"inc * {count} ( {a1} )")
+
 
 
 

