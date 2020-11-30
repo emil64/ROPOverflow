@@ -88,7 +88,11 @@ def doubadd(address,double,add):
     return out
 
 
-
+def zero_and_inc(address,zero_reg,inc):
+    if address < 50:
+        return zero_reg.gadget + (inc.gadget * address)
+    else:
+        return -1
 
 
 
