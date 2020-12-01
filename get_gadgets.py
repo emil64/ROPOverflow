@@ -173,9 +173,12 @@ def push_to_reg(address, reg, gadgets, rop):
 
         dabba =  GadgetStore(reg_gadgets).search(f"DandA")
         if dabba != []:
-            double = pack("<I",rop.get_gadget(f"add {reg}, {reg} ; ret"))
-            add = pack("<I",rop.get_gadget(f"inc {reg} ; ret"))
-            chains.append(address_pop.doubadd(address,double,add))
+            zero = gadgets.search(f"zero {reg}")
+            if zero != []:
+                print("ayy")
+                double = pack("<I",rop.get_gadget(f"add {reg}, {reg} ; ret"))
+                add = pack("<I",rop.get_gadget(f"inc {reg} ; ret"))
+                chains.append(address_pop.doubadd(address,zero[0],double,add))
 
         zero_reg = gadgets.search(f"zero {reg}")
         if zero_reg != []:
@@ -184,7 +187,7 @@ def push_to_reg(address, reg, gadgets, rop):
                 chain = address_pop.zero_and_inc(address,zero_reg[0],inc[0])
                 if chain != -1:
                     chains.append(chain)
-                    
+
         if len(chains) != 0:
             return sorted(chains, key=lambda x: len(x[0]))
         

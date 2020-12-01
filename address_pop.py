@@ -75,16 +75,21 @@ def get_mask_xor(address):
     return mask, (address^mask)
 
 
-def doubadd(address,double,add):
+def doubadd(address,zero,double,add):
     out = b""
-    for i in range(31,0,-1):
+    first_bit = 0
+    for i in range(63,0,-1):
+        if (address >> i) & 0x1 == 1:
+            first_bit = i
+            break 
+    for i in range(first_bit,0,-1):
         if (address >> i) & 0x1 == 1:
            out += add + double 
         else:
            out += double
     if (address & 0x1):
         out += add
-    return out , []
+    return zero.gadget + out , zero.dependencies
 
 
 def zero_and_inc(address,zero_reg,inc):
