@@ -132,14 +132,19 @@ def get_gadgets(rop):
 
 # This function is a sin
 def push_to_reg(address, reg, gadgets, rop):
-    print(f"Address as input {address:x}")
     if null_free(address):
-        print("Output processed easily")
-        return gadgets.search(f"pop {reg}")[0].gadget + pack("<I",address)
+        pop_reg = gadgets.search(f"pop {reg}")[0]
+        return (pop_reg.gadget + pack("<I",address),pop_reg.dependencies)
     else:
         chains = []
         reg_gadgets = gadgets.search(f"{reg}")
         pop_reg =  gadgets.search(f"pop {reg}")
+
+        if address == 0:
+            zero = gadgets.search(f"zero {reg}")
+            if zero != []:
+                chains.append((zero[0].gadget,[]))
+
         if pop_reg != []:
             for gadget in reg_gadgets:
                 if f"add {reg}" in gadget.name:
@@ -165,12 +170,13 @@ def push_to_reg(address, reg, gadgets, rop):
                     chain = address_pop.pop_reg(address,pop_reg[0],0,gadget,"dec")
                     if chain != -1:
                         chains.append(chain)
+
         dabba =  GadgetStore(reg_gadgets).search(f"DandA")
         if dabba != []:
-            print("dabbed")
             double = pack("<I",rop.get_gadget(f"add {reg}, {reg} ; ret"))
             add = pack("<I",rop.get_gadget(f"inc {reg} ; ret"))
             chains.append(address_pop.doubadd(address,double,add))
+
         zero_reg = gadgets.search(f"zero {reg}")
         if zero_reg != []:
             inc = GadgetStore(reg_gadgets).search(f"inc {reg}")
@@ -178,10 +184,9 @@ def push_to_reg(address, reg, gadgets, rop):
                 chain = address_pop.zero_and_inc(address,zero_reg[0],inc[0])
                 if chain != -1:
                     chains.append(chain)
+                    
         if len(chains) != 0:
-            print("Output processed hard")
-            print(sorted(chains, key=lambda x: len(x))[0])
-            return sorted(chains, key=lambda x: len(x))[0]
+            return sorted(chains, key=lambda x: len(x[0]))
         
     print(f"Failed to push address {address} to reg {reg}")
     exit(1)

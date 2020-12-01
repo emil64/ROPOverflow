@@ -19,7 +19,6 @@ def pop_reg(address,reg, reg2, a_gadget, mode):
     :param mode: The type of agadget, member of [add,sub,xor,inc,dec]
     :return: A packed struct that pops address into reg
     """
-    print(f"Modified {address:x} using {mode}")
     if mode in ["add","sub","xor"]:
         mask, masked_address = 0, 0
         if mode == "add":
@@ -29,7 +28,7 @@ def pop_reg(address,reg, reg2, a_gadget, mode):
         elif mode == "xor":
             mask, masked_address = get_mask_xor(address)
         return reg.gadget + pack("<I",masked_address) + (PADDING * reg.dcount)\
-             + reg2.gadget + pack("<I", mask) + (PADDING * reg2.dcount) + a_gadget.gadget
+             + reg2.gadget + pack("<I", mask) + (PADDING * reg2.dcount) + a_gadget.gadget , reg.dependencies + reg2.dependencies + [reg2.name.split()[1]]
 
     elif mode in ["inc","dec"]:
         a_chain = b""
@@ -45,7 +44,7 @@ def pop_reg(address,reg, reg2, a_gadget, mode):
                     a_chain += a_gadget.gadget
         if address < 0:
             return -1
-        return reg.gadget + pack('<I', address) + (PADDING * reg.dcount) + a_chain
+        return reg.gadget + pack('<I', address) + (PADDING * reg.dcount) + a_chain , reg.dependencies 
 
 
 def null_free(address):
@@ -85,12 +84,12 @@ def doubadd(address,double,add):
            out += double
     if (address & 0x1):
         out += add
-    return out
+    return out , []
 
 
 def zero_and_inc(address,zero_reg,inc):
     if address < 50:
-        return zero_reg.gadget + (inc.gadget * address)
+        return zero_reg.gadget + (inc.gadget * address) , zero_reg.dependencies
     else:
         return -1
 
