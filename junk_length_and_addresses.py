@@ -70,5 +70,5 @@ def test():
     assert (data == 0x80da060)
     assert (bss == 0x80db320)
 
-
-test()
+if __name__ == '__main__':
+    test()
