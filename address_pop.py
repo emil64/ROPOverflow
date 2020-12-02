@@ -37,11 +37,20 @@ def pop_reg(address,reg, reg2, a_gadget, mode):
                 if not null_free(address):
                     address -= 1
                     a_chain += a_gadget.gadget
+                else:
+                    break
+            else:
+                return -1
         elif mode == "dec":
             for i in range(50):
                 if not null_free(address):
                     address += 1
                     a_chain += a_gadget.gadget
+                else:
+                    break
+            else:
+                return -1
+                    
         if address < 0:
             return -1
         return reg.gadget + pack('<I', address) + (PADDING * reg.dcount) + a_chain , reg.dependencies 

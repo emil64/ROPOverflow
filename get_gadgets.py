@@ -3,12 +3,7 @@ import address_pop
 from address_pop import doubadd, pop_reg
 import exploit_gadgets
 from struct import pack
-
-def null_free(address):
-    for i in range(4):
-        if ((address >> (8 * i)) % 256) == 0:
-            return False
-    return True
+from address_pop import null_free
 
 class Gadget():
     def __init__(self,name,gadget,dependencies=[]):
