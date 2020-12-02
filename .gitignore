@@ -4,3 +4,5 @@ nc071.tar.gz
 .vagrant/*
 __pycache__/*
 ubuntu-bionic-18.04-cloudimg-console.log
+netperf*
+*.pyc

