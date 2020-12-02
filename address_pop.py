@@ -115,8 +115,6 @@ def test():
         print(f"{out[1]:8x} ^ {out[0]:8x} = {(out[1]^out[0]):8x}")
 
 
-
-
 if __name__ == '__main__':
     test()
     

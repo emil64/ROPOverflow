@@ -57,6 +57,12 @@ def get_pop(rop,reg):
         if rop.get_gadget(f"pop {reg} ; pop {reg2} ; ret"):
             return Gadget(f"pop {reg}", pack('<I',rop.get_gadget(f"pop {reg} ; pop {reg2} ; ret")),[f"{reg2}"])
 
+    # Attempt to find pop that pops 3 gadgets
+    for reg2 in ["eax", "ebx", "ecx", "edx"]:
+        for reg3 in ["eax", "ebx", "ecx", "edx"]:
+            if rop.get_gadget(f"pop {reg} ; pop {reg2} ; pop {reg3} ret"):
+                return Gadget(f"pop {reg}", pack('<I',rop.get_gadget(f"pop {reg} ; pop {reg2} ; pop {reg3} ret")),[f"{reg2,reg3}"])
+
     print("NO GADGETS FOUND")
     return []
 
@@ -74,47 +80,26 @@ def get_zero_reg(rop,reg,gadgets):
     return []
 
 
+# This should be refactored
 def get_double_and_add(rop,reg):
     if rop.get_gadget(f"add {reg}, {reg} ; ret") and rop.get_gadget(f"inc {reg} ; ret"):
         return Gadget(f"DandA {reg}", pack("<I",rop.get_gadget(f"add {reg}, {reg} ; ret")) + pack("<I",rop.get_gadget(f"inc {reg} ; ret")))
     return []
 
-def get_add_reg(rop, reg):
+def get_op_reg(rop, reg, op):
     gadgets = []
-    for reg2 in ["eax","ebx","ecx","edx"]:
-        if reg2 != reg:
-            if rop.get_gadget(f"add {reg}, {reg2} ; ret"):
-                gadgets.append(Gadget(f"add {reg}, {reg2}",
-                            pack("<I",rop.get_gadget(f"add {reg}, {reg2} ; ret"))))
+    if op in ["inc","dec"]:
+        if rop.get_gadget(f"{op} {reg} ; ret"):
+            return Gadget(f"{op} {reg}", pack("<I",rop.get_gadget(f"{op} {reg} ; ret")))
+        else: 
+            return []
+    else:
+        for reg2 in ["eax","ebx","ecx","edx"]:
+            if reg2 != reg:
+                if rop.get_gadget(f"{op} {reg}, {reg2} ; ret"):
+                    gadgets.append(Gadget(f"{op} {reg}, {reg2}",
+                                pack("<I",rop.get_gadget(f"add {reg}, {reg2} ; ret"))))
     return gadgets
-
-def get_sub_reg(rop, reg):
-    gadgets = []
-    for reg2 in ["eax","ebx","ecx","edx"]:
-        if reg2 != reg:
-            if rop.get_gadget(f"sub {reg}, {reg2} ; ret"):
-                gadgets.append(Gadget(f"sub {reg}, {reg2}",
-                            pack("<I",rop.get_gadget(f"sub {reg}, {reg2} ; ret"))))
-    return gadgets
-
-def get_xor_reg(rop, reg):
-    gadgets = []
-    for reg2 in ["eax","ebx","ecx","edx"]:
-        if reg2 != reg:
-            if rop.get_gadget(f"xor {reg}, {reg2} ; ret") and reg != reg2:
-                gadgets.append(Gadget(f"xor {reg}, {reg2}",
-                            pack("<I",rop.get_gadget(f"xor {reg}, {reg2} ; ret"))))
-    return gadgets
-
-def get_inc_reg(rop, reg):
-    if rop.get_gadget(f"inc {reg} ; ret"):
-        return Gadget(f"inc {reg}", pack("<I",rop.get_gadget(f"inc {reg} ; ret")))
-    return []
-
-def get_dec_reg(rop, reg):
-    if rop.get_gadget(f"dec {reg} ; ret"):
-        return Gadget(f"dec {reg}", pack("<I",rop.get_gadget(f"dec {reg} ; ret")))
-    return []
 
 def get_gadgets(rop):
     gadgets = GadgetStore()
@@ -122,15 +107,10 @@ def get_gadgets(rop):
         gadgets.add(get_pop(rop,reg))
         gadgets.add(get_double_and_add(rop,reg))
         gadgets.add(get_zero_reg(rop,reg,gadgets))
-        gadgets.add(get_add_reg(rop,reg))
-        gadgets.add(get_sub_reg(rop,reg))
-        gadgets.add(get_xor_reg(rop,reg))
-        gadgets.add(get_inc_reg(rop,reg))
-        gadgets.add(get_dec_reg(rop,reg))
-
+        for op in ["add", "sub", "xor", "inc", "dec"]:
+            gadgets.add(get_op_reg(rop,reg,op))
     return gadgets
 
-# This function is a sin
 def push_to_reg(address, reg, gadgets, rop):
     if null_free(address):
         pop_reg = gadgets.search(f"pop {reg}")[0]
@@ -147,21 +127,13 @@ def push_to_reg(address, reg, gadgets, rop):
 
         if pop_reg != []:
             for gadget in reg_gadgets:
-                if f"add {reg}" in gadget.name:
-                    reg2 = gadget.name.split()[2]
-                    pop_reg2 = gadgets.search(f"pop {reg2}")
-                    if pop_reg2 != []:
-                        chains.append(address_pop.pop_reg(address,pop_reg[0],pop_reg2[0],gadget,"add"))
-                if f"sub {reg}" in gadget.name:
-                    reg2 = gadget.name.split()[2]
-                    pop_reg2 = gadgets.search(f"pop {reg2}")
-                    if pop_reg2 != []:
-                        chains.append(address_pop.pop_reg(address,pop_reg[0],pop_reg2[0],gadget,"sub"))
-                if f"xor {reg}" in gadget.name:
-                    reg2 = gadget.name.split()[2]
-                    pop_reg2 = gadgets.search(f"pop {reg2}")
-                    if pop_reg2 != []:
-                        chains.append(address_pop.pop_reg(address,pop_reg[0],pop_reg2[0],gadget,"xor"))
+                for op in ["add","sub","xor"]:
+                    if f"{op} {reg}" in gadget.name:
+                        reg2 = gadget.name.split()[2]
+                        pop_reg2 = gadgets.search(f"pop {reg2}")
+                        if pop_reg2 != []:
+                            chains.append(address_pop.pop_reg(address,pop_reg[0],pop_reg2[0],gadget,op))
+
                 if f"inc {reg}" in gadget.name:
                     chain = address_pop.pop_reg(address,pop_reg[0],0,gadget,"inc")
                     if chain != -1:
@@ -175,7 +147,6 @@ def push_to_reg(address, reg, gadgets, rop):
         if dabba != []:
             zero = gadgets.search(f"zero {reg}")
             if zero != []:
-                print("ayy")
                 double = pack("<I",rop.get_gadget(f"add {reg}, {reg} ; ret"))
                 add = pack("<I",rop.get_gadget(f"inc {reg} ; ret"))
                 chains.append(address_pop.doubadd(address,zero[0],double,add))
