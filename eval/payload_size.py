@@ -19,19 +19,24 @@ def shell2bin(shellcode, binary):
         filebin.close()
 
 
-def open_shellcode(filename):
+def open_shellcode(binary_name, filename):
 
     shell2bin("shellcodes/" + filename, "badfile")
-    exploit = mprotect.rop_exploit("badfile")
+    exploit = mprotect.rop_exploit(binary_name, "badfile")
     os.remove("badfile")
     result.append((filename, len(exploit)))
 
 
-def shellcodes():
+def shellcodes(binary_name):
     folder = os.getcwd() + "/shellcodes"
     for filename in os.listdir(folder):
-        open_shellcode(filename)
+        open_shellcode(binary_name, filename)
 
 
-shellcodes()
-print(result)  # size in bytes
+def test():
+    shellcodes("vuln3-32-test")
+    print(result)  # size in bytes
+
+
+if __name__ == "__main__":
+    test()
