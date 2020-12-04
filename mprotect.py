@@ -34,7 +34,7 @@ def schedule(commands):
     print("No valid order!")
     return -1
 
-def rop_exploit(binary_name, shellcode_name):
+def rop_exploit(binary_name):
     """Create the full ROP chain reverse shell exploit
 
     :param cli_args: The command line arguments
@@ -88,10 +88,9 @@ def main():
 
     binary_name = sys.argv[1]
     file_name=sys.argv[2]
-    shellcode_name = sys.argv[3]
 
     outfile=open(file_name, "wb")
-    outfile.write(rop_exploit(binary_name, shellcode_name))
+    outfile.write(rop_exploit(binary_name))
     outfile.close()
 
 
