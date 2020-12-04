@@ -21,10 +21,14 @@ def shell2bin(shellcode, binary):
 
 def open_shellcode(binary_name, filename):
 
-    shell2bin("shellcodes/" + filename, "badfile")
-    exploit = mprotect.rop_exploit(binary_name, "badfile")
-    os.remove("badfile")
-    result.append((filename, len(exploit)))
+    if ".exclude" not in filename:
+        if ".bin" in filename:
+            exploit = mprotect.rop_exploit(binary_name, "shellcodes/" + filename)
+        else:
+            shell2bin("shellcodes/" + filename, "badfile")
+            exploit = mprotect.rop_exploit(binary_name, "badfile")
+            os.remove("badfile")
+        result.append((filename, len(exploit)))
 
 
 def shellcodes(binary_name):

