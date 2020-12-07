@@ -33,7 +33,7 @@ def pop_reg(address,reg, reg2, a_gadget, mode):
     elif mode in ["inc","dec"]:
         a_chain = b""
         if mode == "inc":
-            for i in range(50):
+            for i in range(300):
                 if not null_free(address):
                     address -= 1
                     a_chain += a_gadget.gadget
@@ -42,7 +42,7 @@ def pop_reg(address,reg, reg2, a_gadget, mode):
             else:
                 return -1
         elif mode == "dec":
-            for i in range(50):
+            for i in range(300):
                 if not null_free(address):
                     address += 1
                     a_chain += a_gadget.gadget
@@ -102,7 +102,7 @@ def doubadd(address,zero,double,add):
 
 
 def zero_and_inc(address,zero_reg,inc):
-    if address < 50:
+    if address < 300:
         return zero_reg.gadget + (inc.gadget * address) , zero_reg.dependencies
     else:
         return -1
