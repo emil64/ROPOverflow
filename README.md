@@ -14,7 +14,7 @@ The members of the group are:
 
 ### Prerequisites
 
-The project has been developed and tested on a Ubuntu 18.04 Bionic Beaver Virtual Machine. Please run the following commands to install all the packages needed to execute the project:
+The project has been developed and tested on a Ubuntu 18.04.5 LTS Bionic Beaver Virtual Machine. Please run the following commands to install all the packages needed to execute the project:
 
 * `sudo apt-get update`
 * `sudo apt-get install -y python3-pip gcc-multilib gdb`
