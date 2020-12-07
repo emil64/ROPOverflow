@@ -109,7 +109,7 @@ def get_gadgets(rop):
 def push_to_reg(address, reg, gadgets, rop):
     if null_free(address):
         pop_reg = gadgets.search(f"pop {reg}")[0]
-        return [(pop_reg.gadget + pack("<I",address),pop_reg.dependencies)]
+        return [(pop_reg.gadget + pack("<I",address) * (pop_reg.dcount + 1) ,pop_reg.dependencies)]
     else:
         chains = []
         reg_gadgets = gadgets.search(f"{reg}")
