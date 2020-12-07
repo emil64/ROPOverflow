@@ -5,7 +5,7 @@ import binascii
 import time
 
 sys.path.append('../')
-import mprotect
+import ropoverflow
 
 result = []
 
@@ -24,10 +24,10 @@ def open_shellcode(binary_name, filename):
     if ".exclude" not in filename:
         print("Testing " + filename)
         if ".bin" in filename:
-            exploit = mprotect.rop_exploit(binary_name)
+            exploit = ropoverflow.rop_exploit(binary_name)
         else:
             shell2bin("shellcodes/" + filename, "badfile")
-            exploit = mprotect.rop_exploit(binary_name)
+            exploit = ropoverflow.rop_exploit(binary_name)
             os.remove("badfile")
         result.append((filename, len(exploit)))
 
