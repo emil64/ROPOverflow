@@ -1,14 +1,11 @@
 import sys
+from itertools import permutations, product
 from os import stat
 from struct import pack
-from itertools import permutations, product
 
-import address_pop
 import exploit_gadgets
 import input_length
 from get_gadgets import get_gadgets, push_to_reg
-
-
 
 
 def valid(elem, rest):
