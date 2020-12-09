@@ -158,7 +158,7 @@ def push_to_reg(address, reg, gadgets, rop):
             return sorted(chains, key=lambda x: len(x[0]))
         
     print(f"Failed to push address {address} to reg {reg}")
-    exit(1)
+    return -1
 
 
 
