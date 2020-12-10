@@ -70,7 +70,7 @@ def netperf(exe):
 
         slack += 254
 
-        print(slack);
+        print(slack)
         for x in range(1, 255):
             b.extend([x, x, x, x])
 
@@ -90,7 +90,7 @@ def netperf(exe):
 
         if response[-1]['payload']['reason'] == 'signal-received':
             address = response[-1]['payload']['frame']['addr']
-            print(address);
+            print(address)
             if address[2:4] == address[4:6] or address[6:8] == address[8:]:
                 signal = response[-1]['payload']['signal-name']
                 # pprint(response)

