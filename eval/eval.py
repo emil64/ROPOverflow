@@ -26,12 +26,13 @@ def shell2bin(shellcode, binary):
 def open_shellcode(binary_name, filename):
     if ".exclude" not in filename:
         print("Testing " + filename)
+        (padding, _, bss) = input_length.get_everything(binary_name)
         if ".hex" in filename:
             shell2bin("shellcodes/" + filename, "badfile")
-            exploit = ropoverflow.rop_exploit(binary_name)
+            exploit = ropoverflow.rop_exploit(binary_name, padding, bss)
             os.remove("badfile")
         else:
-            exploit = ropoverflow.rop_exploit(binary_name)
+            exploit = ropoverflow.rop_exploit(binary_name, padding, bss)
         result.append((filename, len(exploit)))
 
 
@@ -48,15 +49,15 @@ def shellcodes(binary_name):
         open_shellcode(binary_name, filename)
         average += get_time(start)
     average = average / len(os.listdir(folder))
-    print(f'Average CPU time is: {average}')
+    return average
 
 
 def padding_time(binary):
     average = 0.0
     for i in range(1, 10):
-        start = time.time();
+        start = time.time()
         input_length.get_everything(binary)
-        average += get_time(start);
+        average += get_time(start)
     average = average / 10
     return average
 
@@ -64,9 +65,9 @@ def padding_time(binary):
 def gadgets_time(binary):
     average = 0.0
     for i in range(1, 10):
-        start = time.time();
+        start = time.time()
         exploit_gadgets.ROPgadgets(binary)
-        average += get_time(start);
+        average += get_time(start)
     average = average / 10
     return average
 
@@ -76,26 +77,35 @@ def gadgets_usage_per_bin(binary):
     total = len(rop.get_gadgets())
     exploit = ropoverflow.rop_exploit(binary, 0, 0xffffffff)
     if exploit == -1:
-        return total, -1
+        return binary, total, -1
     uniques = reduce(lambda x, y: ((y in x) and x) or x + [y], exploit, [])
     gadgets_used = len(uniques)
     return total, gadgets_used
+
 
 def gadgets_usage():
     folder = os.getcwd() + "/binaries/"
     usage = []
     for filename in os.listdir(folder):
-        usage.append(gadgets_usage_per_bin(folder + filename))
+        t, gu = gadgets_usage_per_bin(folder + filename)
+        usage.append((filename, t, gu))
     return usage
+
 
 def test():
     test_binary = "vuln3-32-test"
-    # shellcodes(test_binary)
-    # print(result)  # size in bytes
-    # print(f"Avergage padding time: {padding_time(test_binary)}")
-    # print(f"Avergage gadgets time: {gadgets_time(test_binary)}")
-    print(gadgets_usage())
-    # lines of code: pygount - -format = summary - -folders - to - skip = "[eval, netperf-netperf-2.6.0, __pycache__, venv, vulnerable_binaries, .git, .idea, .vagrant]"
+    average = shellcodes(test_binary)  # size in bytes
+    p_time = padding_time(test_binary)
+    g_time = gadgets_time(test_binary)
+    g_usage = gadgets_usage()
+    print("\n\n\n")
+    print(f"Payload sizes: {result}")
+    print(f"Average CPU timpe: {average}")
+    print(f"Avergage time to find padding: {p_time}")
+    print(f"Avergage time to find gadgets: {g_time}")
+    print(f"Gadgets usage: {g_usage}")
+    # lines of code: pygount --format=summary --folders-to-skip="[eval,netperf-netperf-2.6.0,__pycache__,
+    # venv,vulnerable_binaries,.git,.idea,.vagrant]"
 
 
 if __name__ == "__main__":

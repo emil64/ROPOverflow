@@ -66,6 +66,8 @@ def get_zero_reg(rop,reg,gadgets):
         return Gadget(f"zero {reg}", pack('<I',rop.get_gadget(f"xor {reg}, {reg} ; ret")))
         
     if rop.get_gadget(f"inc {reg} ; ret"):
+        if len(gadgets.search(f"pop {reg}")) == 0:
+            return []
         pop = gadgets.search(f"pop {reg}")[0]
         dependencies = pop.dependencies
         # Push ffffffff, increment register, and provide value for dependencies to eat

