@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	printf("file opened\n");
 	fread(buffer, 699,1,file);
 	fclose(file);
-	copyData(buffer);
+	function1(buffer);
 	return (0);
 }
 		
