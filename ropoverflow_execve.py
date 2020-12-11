@@ -144,7 +144,7 @@ def main():
     for arg in params.split():
         args.append(preprocess(arg))
 
-    shadow_stack_address = sum([len(x) + 1 for x in args]) + 1
+    shadow_stack_address = sum([len(x) + 1 for x in args]) + 30
     fileName=sys.argv[2]
     start_time = time.time()
     outfile=open(fileName, "wb")
